@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Regression tests. Run directly (python3 -I tests/test_ground_truth.py)
+or under pytest.
+
+The important one is test_all_solved_pages_reproduce: if that fails, every
+measurement in this repo is suspect, because the same code paths produce
+them.
+"""
+import os
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, 'scripts'))
+
+from lp import cipher, keystream                       # noqa: E402
+from lp.alphabet import INDEX, RUNES, PRIMES, N        # noqa: E402
+from lp.hypotheses import apply_rejection              # noqa: E402
+from lp.runetext import RuneText, SOLVED               # noqa: E402
+
+SOURCES = os.environ.get('LP_SOURCES', '/home/user/relikd/LiberPrayground')
+
+
+def test_alphabet_is_29_distinct_runes():
+    assert len(RUNES) == N == 29
+    assert len(set(RUNES)) == 29
+    assert len(PRIMES) == 29
+    assert PRIMES[0] == 2 and PRIMES[-1] == 109
+    assert INDEX['ᚠ'] == 0
+
+
+def test_invert_is_an_involution():
+    vals = list(range(N))
+    assert cipher.invert(cipher.invert(vals)) == vals
+
+
+def test_vigenere_roundtrip():
+    plain = [i % N for i in range(200)]
+    key = [3, 14, 15, 9, 26]
+    ct = cipher.vigenere_encrypt(plain, key)
+    assert cipher.vigenere_decrypt(ct, key) == plain
+
+
+def test_interrupt_passes_through_and_shifts_alignment():
+    """An interrupt rune is emitted unchanged AND consumes no key value,
+    so every rune after it shifts one position along the key.
+
+    Hand-computed: ct = [0, 1, 2, 3], key = [10, 20].
+      no interrupt  -> [(0-10), (1-20), (2-10), (3-20)] mod 29
+      interrupt #1  -> rune 0 passes through; the rest re-align to key[0]
+    """
+    ct = [0, 1, 2, 3]
+    key = [10, 20]
+    assert cipher.vigenere_decrypt(ct, key) == [19, 10, 21, 12]
+    assert cipher.vigenere_decrypt(ct, key, interrupts={1}) == [0, 20, 11, 22]
+
+
+def test_interrupt_only_fires_on_listed_occurrences():
+    """The 2nd F is an interrupt, the 1st is not."""
+    ct = [0, 5, 0, 5]
+    key = [1]
+    out = cipher.vigenere_decrypt(ct, key, interrupts={2})
+    assert out[0] == (0 - 1) % 29   # encrypted normally
+    assert out[2] == 0              # passed through
+
+
+def test_totient_of_primes_stream():
+    assert list(keystream.totient_of_primes(6)) == [1, 2, 4, 6, 10, 12]
+
+
+def test_rejection_rule_suppresses_doubles():
+    plain = [(i * 7 + 3) % N for i in range(4000)]
+    ks = [(i * 11 + 5) % N for i in range(97)]
+    ct = apply_rejection(plain, ks, model='KEY_BUMP')
+    doubles = sum(1 for a, b in zip(ct, ct[1:]) if a == b)
+    assert doubles == 0, 'absolute KEY_BUMP must leave no adjacent repeats'
+
+
+def test_all_solved_pages_reproduce():
+    from verify_ground_truth import SOLUTIONS, decrypt
+    for name in SOLVED:
+        page = RuneText.from_page(SOURCES, name)
+        expect = RuneText.from_page(SOURCES, 'solved_' + name)
+        got = decrypt(page, SOLUTIONS[name])
+        assert got == expect.indices, f'{name} did not reproduce'
+
+
+if __name__ == '__main__':
+    fns = [v for k, v in sorted(globals().items()) if k.startswith('test_')]
+    failed = 0
+    for fn in fns:
+        try:
+            fn()
+            print(f'PASS  {fn.__name__}')
+        except Exception as e:
+            failed += 1
+            print(f'FAIL  {fn.__name__}: {e}')
+    print(f'\n{len(fns) - failed}/{len(fns)} passed')
+    sys.exit(1 if failed else 0)
