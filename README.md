@@ -55,9 +55,14 @@ python3 -I scripts/word_structure.py        # is a rune a letter or a word?
 python3 -I scripts/running_key.py           # could the key be an existing book?
 python3 -I scripts/periodicity.py           # any repeating keyword <= 500?
 python3 -I scripts/battery.py               # candidate keys + random-key null
+python3 -I scripts/diff_spectrum.py        # key families ruled out at ANY offset; skip vs bump
+python3 -I scripts/theme_checks.py          # headings, prime sentences, unencrypted runes
+python3 -I scripts/sacred_battery.py        # theme-derived keystreams, skip-aware (~2-3 min)
 ```
 
 **Every idea tried so far, and its status, is in [HYPOTHESES.md](HYPOTHESES.md).**
+**How the solved pages were broken, and the book's recurring themes, are in
+[THEMES.md](THEMES.md).**
 
 For the full 2012-2017 primary archive (~1.3 GB, only needed for
 [RESEARCH.md](RESEARCH.md)'s sources, not for any analysis):
@@ -81,6 +86,7 @@ No dependencies beyond the Python 3 standard library. Scripts take
 | `lp/score.py` | null-calibrated English scorer over rune n-grams |
 | `lp/gematria.py` | Gematria Primus sums, primality, emirps, totients |
 | `lp/translit.py` | English → runes, for turning keywords into keys |
+| `lp/decode.py` | skip-aware decoder for the unsolved pages' no-repeat rule |
 | `lp/hypotheses.py` | models for the repeat deficit — **and where to add yours** |
 | `scripts/` | runnable analyses, each self-documenting |
 | `tests/` | regression tests; the key one re-derives all 9 solved pages |

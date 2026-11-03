@@ -10,26 +10,34 @@ toward 1/29 from either side. Nothing uniform and independent produces
 0.19x. So the unsolved stream was built with a rule that forbids, or nearly
 forbids, emitting the same rune twice in a row.
 
-Three mechanisms produce a lag-1-only deficit, and they imply DIFFERENT
-attacks. That is why the choice matters rather than being a detail:
+Three mechanisms were on the table; the data has now chosen between them
+(scripts/diff_spectrum.py):
 
   (a) KEY_SKIP      -- on collision, discard that key value and take the
-                       next one. The keystream then contains skips at
-                       positions an attacker cannot see, so every candidate
-                       key must be searched together with its skip pattern
-                       (combinatorial, like the known interrupt search).
+                       next one (equivalently, redraw).  CONSISTENT.
+                       The ~360 missing doubles reappear spread evenly over
+                       the other 28 difference values, exactly as a redraw
+                       predicts. Contrary to what this file first claimed,
+                       it is NOT combinatorial: given the right keystream a
+                       skip is possible only where C[i]-K[j+1]+K[j] == C[i-1]
+                       (about 1 position in 29), so decoding branches rarely
+                       and a beam search resolves it. See lp/decode.py.
 
-  (b) KEY_BUMP      -- on collision, perturb the key value deterministically
-                       (e.g. +1 mod 29). The keystream stays in lockstep
-                       with position, so a candidate key is testable exactly
-                       and cheaply. Far more attackable than (a).
+  (b) KEY_BUMP      -- on collision, add a fixed +k.  RULED OUT for every k:
+                       it would pile the missing doubles into the single bin
+                       d=k (~+17 sd). No bin exceeds +3.1 sd.
 
-  (c) PLAINTEXT_AVOID -- the author composed plaintext that happens not to
-                       collide. Then the deficit says nothing about the key
-                       and keystream search should ignore it entirely.
+  (c) PLAINTEXT_AVOID -- the author composed plaintext that never collides.
+                       RULED OUT: a uniform independent key would erase any
+                       plaintext property from C, and the deficit is the same
+                       inside words (0.18x), across word gaps (0.24x), at line
+                       breaks (0.21x) and at sentence ends (0.24x).
 
-Distinguishing (a) from (b) is the highest-value open question in this
-repo: (b) makes brute-force over key sequences viable, (a) mostly does not.
+The rule leaks about 1 collision in 5, evenly everywhere (dispersion index
+0.98): no passage is rule-free. Why 80% rather than 100% is unexplained.
+
+The practical consequence: any keystream must be tested with skip-aware
+decoding. Decoded the ordinary way, the RIGHT key scores like noise.
 """
 from .alphabet import N
 
@@ -58,7 +66,10 @@ def apply_rejection(plain, keystream, model='KEY_BUMP'):
 
 
 def undo_key_bump(cipher, keystream):
-    """Decoder for model (b), with one honest ambiguity.
+    """Decoder for model (b) -- which the data has since RULED OUT. Kept so the
+    fixtures and tests that compare the two models still run.
+
+    One honest ambiguity:
 
     When c[i] == c[i-1] + 1 the rune was EITHER bumped off a collision OR
     naturally landed one above its neighbour; the ciphertext cannot say
@@ -87,7 +98,7 @@ def my_keystream(n):
 
     Run it with:  python3 -I scripts/battery.py
     It is tried on all 9 unsolved pages at start offsets 0..299, decoded both
-    plainly and with the KEY_BUMP rule undone, and compared against random
+    plainly and SKIP-AWARE (lp.decode.undo_key_skip), and compared against random
     streams pushed through the identical procedure. A real break scores far
     above that random maximum (the calibration hit is about +47).
 

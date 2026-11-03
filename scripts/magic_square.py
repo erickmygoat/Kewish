@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Verify the Liber Primus magic square and the 'An End' hash.
+"""Verify the three Liber Primus magic squares and the 'An End' hash.
 
-Published accounts of Cicada's squares disagree -- some report a total of
-3301, others 1033 -- so this computes the sums directly from the grid as it
-appears in the solved transcription rather than quoting either.
+Cicada asked 2014 solvers to submit "the three magic squares". Accounts
+quote both 3301 and 1033 as the constant; they are describing different
+squares. This computes all three directly. The SOME WISDOM square mixes
+words and numbers: each word is replaced by its Gematria Primus value.
 
 Usage:  python3 -I scripts/magic_square.py
 """
@@ -14,8 +15,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from lp import gematria as g                           # noqa: E402
 
-# The 5x5 grid printed on the Loss of Divinity page group, transcribed in
-# relikd/LiberPrayground `_solved.txt`.
+# The 5x5 grid on the "AN INSTRUCTION ... KNOW THIS" page (229.jpg),
+# transcribed in relikd/LiberPrayground `_solved.txt`.
 SQUARE_5 = [
     [434, 1311, 312, 278, 966],
     [204,  812, 934, 280, 1071],
@@ -23,6 +24,33 @@ SQUARE_5 = [
     [1071, 280, 934, 812, 204],
     [966,  278, 312, 1311, 434],
 ]
+
+# "SOME WISDOM ... KNOW THIS": words stand for their gematria values.
+SQUARE_WORDS = [
+    ['272', '138', 'SHADOWS', '131', '151'],
+    ['AETHEREAL', 'BUFFERS', 'VOID', 'CARNAL', '18'],
+    ['226', 'OBSCURA', 'FORM', '245', 'MOBIUS'],
+    ['18', 'ANALOG', 'VOID', 'MOURNFUL', 'AETHEREAL'],
+    ['151', '131', 'CABAL', '138', '272'],
+]
+
+# 7x7 hidden in onion5.mp3 (OpenPuff), as posted in #cicadasolvers.
+SQUARE_7 = [
+    [7, 375, 236, 190, 27, 17, 181],
+    [351, 223, 14, 47, 293, 98, 7],
+    [456, 232, 121, 114, 72, 23, 15],
+    [16, 65, 270, 331, 270, 65, 16],
+    [15, 23, 72, 114, 121, 232, 456],
+    [7, 98, 293, 47, 14, 223, 351],
+    [181, 17, 27, 190, 236, 375, 7],
+]
+
+
+def words_to_numbers(grid):
+    from lp.translit import to_runes
+    return [[int(c) if c.isdigit() else g.value(to_runes(c)) for c in row]
+            for row in grid]
+
 
 # The SHA-512 hash quoted on the "An End" page. The page that hashes to this
 # has never been found -- it is the puzzle's outstanding open bounty.
@@ -62,7 +90,10 @@ def main():
     print('MAGIC SQUARE / HASH VERIFICATION')
     print('=' * 70)
     print()
-    magic, target = check(SQUARE_5, 'Liber Primus 5x5')
+    magic, target = check(SQUARE_5, 'Liber Primus 5x5, "AN INSTRUCTION" page')
+    check(words_to_numbers(SQUARE_WORDS), 'Liber Primus 5x5, "SOME WISDOM" '
+          '(words -> gematria)')
+    check(SQUARE_7, '7x7 from onion5.mp3')
 
     print('distinct values and 3301-complements')
     vals = sorted({v for r in SQUARE_5 for v in r})

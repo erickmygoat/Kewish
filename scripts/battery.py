@@ -11,7 +11,9 @@ Two kinds of candidate:
 
   2. YOUR keystream -- lp.hypotheses.my_keystream(n), if you've written it.
      Tried at start offsets 0..299 on every page, decoded both plainly and
-     with the KEY_BUMP no-repeat rule undone.
+     SKIP-AWARE (lp.decode.undo_key_skip). The skip-aware decode matters:
+     the unsolved pages were enciphered with a no-repeat rule, and under it
+     the right key decoded plainly scores like noise (z -1.4 on a test page).
 
 Scores are z against random streams of the same length. Calibration line
 first, so you know what a hit looks like.
@@ -115,36 +117,42 @@ def main():
     print()
 
     try:
-        ks = hypotheses.my_keystream(5000)
+        ks = hypotheses.my_keystream(6000)
     except NotImplementedError:
         print('my_keystream(): not written yet -- see lp/hypotheses.py')
         return 0
+    from lp.decode import undo_key_skip
     ks = [int(v) % 29 for v in ks]
-    top = (-1e9, None)
-    tried = 0
-    for page, c in pages.items():
-        for off in range(args.offsets):
-            stream = ks[off:off + len(c)]
-            if len(stream) < len(c):
-                break
-            for mode in ('plain', 'key_bump'):
-                p = (cipher.vigenere_decrypt(c, stream) if mode == 'plain'
-                     else hypotheses.undo_key_bump(c, stream))
-                z = sc.z(p)
-                tried += 1
-                if z > top[0]:
-                    top = (z, f'{page} offset {off} {mode}')
-    print(f'my_keystream(): {tried:,} cells, best z = {top[0]:+.2f} at {top[1]}')
-    for t in range(args.null):
-        rs = [rng.randrange(29) for _ in range(len(ks))]
-        rbest = -1e9
+    SCREEN = 150   # screen on each page's opening, then re-decode the best in full
+
+    def screen_stream(stream_all):
+        best = (-1e9, None)
+        cells = 0
         for page, c in pages.items():
             for off in range(args.offsets):
-                stream = rs[off:off + len(c)]
-                if len(stream) < len(c):
+                st = stream_all[off:off + int(SCREEN * 1.3) + 5]
+                if len(st) < SCREEN * 1.1:
                     break
-                rbest = max(rbest, sc.z(cipher.vigenere_decrypt(c, stream)),
-                            sc.z(hypotheses.undo_key_bump(c, stream)))
+                for mode in ('plain', 'key_skip'):
+                    p = (cipher.vigenere_decrypt(c[:SCREEN], st[:SCREEN]) if mode == 'plain'
+                         else undo_key_skip(c[:SCREEN], st, sc, beam=4))
+                    z = sc.z(p)
+                    cells += 1
+                    if z > best[0]:
+                        best = (z, (page, off, mode))
+        return best, cells
+
+    top, tried = screen_stream(ks)
+    page, off, mode = top[1]
+    print(f'my_keystream(): {tried:,} cells (first {SCREEN} runes of each page), '
+          f'best z = {top[0]:+.2f} at {page} offset {off} {mode}')
+    c = pages[page]
+    full = (cipher.vigenere_decrypt(c, ks[off:off + len(c)]) if mode == 'plain'
+            else undo_key_skip(c, ks[off:off + int(len(c) * 1.3) + 5], sc, beam=8))
+    print(f'  that cell decoded in full: z = {sc.z(full):+.2f}')
+    for t in range(args.null):
+        rs = [rng.randrange(29) for _ in range(len(ks))]
+        (rbest, _), _ = screen_stream(rs)
         verdict = 'BEATS noise -- look closer' if top[0] > rbest else 'within noise'
         print(f'  random stream, same procedure (replica {t+1}): max z = '
               f'{rbest:+.2f}   -> {verdict}')

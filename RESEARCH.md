@@ -110,12 +110,27 @@ RSA-style semiprime, which would need ECM or GNFS rather than these methods.
 I did not factor it, and I am not claiming it is a semiprime — only that it is
 composite with no small factors.
 
+**[V]** One thing makes it more suggestive than that. In 2014 Cicada published
+an RSA public key whose modulus was **also exactly 432 bits**, and solvers
+brute-forced it (the archive gives p and q; p×q = N checks out). The 2012
+number shares no factor with that modulus (gcd = 1), so it is a different key —
+but it is Cicada's RSA size exactly. A 432-bit number is within reach of a
+modern GNFS run (CADO-NFS) in days on one machine.
+
 ### 2013
 **[R]** Bootable Linux CD images, posters on lamp posts worldwide, Crowley's
 writings, riddles in audio. The archive contains the Cicada OS shell scripts,
 the `761.MP3` audio, and the full 2013 Twitter feed. **[V]** `3301.iso` in
 `rtkd/iddqd` is a **Git LFS pointer stub** (136,398,848 bytes upstream), not
 the image itself — anonymous clones do not fetch LFS objects.
+
+**[P]/[V]** The 2013 round's audio, `761.mp3`, is titled *The Instar
+Emergence*, and "THE INSTAR EMERGENCE" in the Gematria Primus sums to exactly
+**761**. Its ID tag carried a **Parable** with the number 1,595,277,641. That
+Parable is word for word the final page of the Liber Primus, published a year
+before the book. Its three lines sum to **1259, 1031 and 1229 — all prime** —
+and 1259 × 1031 × 1229 = **1,595,277,641** exactly. It also names DIVINITY and
+CIRCUMFERENCE, the two words later used as keys in the book.
 
 **[V]** A curiosity: the 2013 files `2013/02/wisdom` and `2013/02/folly` are
 **byte-identical** (both 3,368 bytes, md5 `0c7d18e8…`). Whatever distinguishes
@@ -199,28 +214,42 @@ community's published values **102 / 102**. (`scripts/gematria_check.py`)
 
 ---
 
-## 7. The 5×5 magic square
+## 7. The three magic squares
 
-**[V]** Transcribed on the Loss of Divinity page group. Secondary sources
-disagree about its constant (3301 vs 1033), so here it is computed:
+In January 2014 Cicada's onion asked solvers to submit **"the three magic
+squares"** before releasing the next pages. They are:
+
+| square | where | constant | notes |
+|---|---|---|---|
+| 5×5, numbers | "AN INSTRUCTION … KNOW THIS" (229.jpg) | **3301** | completed by solvers from border numbers in the onion-5 portrait |
+| 5×5, **words and numbers** | "SOME WISDOM … KNOW THIS" | **1033** | each word stands for its Gematria Primus value |
+| 7×7, numbers | hidden in `onion5.mp3` (OpenPuff) | **1033** | centre 331 |
+
+**[V]** All three are fully magic (rows, columns, both diagonals) and all three
+are symmetric under 180° rotation. 3301 and 1033 are each other's digit
+reversal, and both are prime.
+
+**Correction.** An earlier version of this file said it had "settled" a
+disagreement between sources over whether the square's constant was 3301 or
+1033. There was no disagreement: the sources were describing different squares.
+
+**[V]** The 1033 square is the clearest demonstration of the book's rule that
+words *are* numbers:
 
 ```
-  434  1311   312   278   966   = 3301
-  204   812   934   280  1071   = 3301
-  626   620   809   620   626   = 3301
- 1071   280   934   812   204   = 3301
-  966   278   312  1311   434   = 3301
- 3301  3301  3301  3301  3301   ← column sums
- diagonals: 3301, 3301
+ 272       138       SHADOWS   131       151         272  138  341  131  151
+ AETHEREAL BUFFERS   VOID      CARNAL    18          366  199  130  320   18
+ 226       OBSCURA   FORM      245       MOBIUS  ->  226  245   91  245  226
+ 18        ANALOG    VOID      MOURNFUL  AETHEREAL    18  320  130  199  366
+ 151       131       CABAL     138       272         151  131  341  138  272
 ```
 
-**[V]** Fully magic, constant **3301**. Additional structure: the grid is
-invariant under 180° rotation, and holds only **13 distinct values** across
-25 cells. Centre cell 809.
+Word pairs are chosen to have equal values where the symmetry needs them:
+SHADOWS = CABAL = 341, BUFFERS = MOURNFUL = 199, CARNAL = ANALOG = 320.
 
 **[V] A circulating claim that is false.** It is sometimes said that
-"3301 minus each entry is prime". It is not: of the 13 distinct values, only
-one complement (3301 − 278 = 3023) is prime. (`scripts/magic_square.py`)
+"3301 minus each entry of the 3301 square is prime". Of its 13 distinct values,
+only one complement (3301 − 278 = 3023) is prime. (`scripts/magic_square.py`)
 
 ---
 
@@ -331,13 +360,15 @@ has said so publicly.
 
 ## 12. Open problems, ranked by tractability
 
-1. **Separate the two rejection models** for the lag-1 repeat deficit in the
-   unsolved pages. Testable now, no key guess needed; decides whether
-   brute-force over keystreams is viable at all. See FINDINGS.md §6.
+1. ~~Separate the two rejection models~~ — **done**: the encoder skips/redraws,
+   it does not bump, and skip-aware decoding is tractable. Every keystream
+   candidate now has to be re-tested skip-aware. See FINDINGS.md §6 and
+   THEMES.md.
 2. **Find a 2048-bit modulus** anywhere in the corpus. Would make the four
    byte strings attackable; without one they are inert.
-3. **Factor the 131-digit 2012 number** (432-bit). Needs ECM/GNFS, not the
-   elementary methods tried here. May be meaningless even if factored.
+3. **Factor the 131-digit 2012 number** (432-bit — the same size as the 2014
+   RSA modulus solvers factored). A GNFS job, days on one machine. May be
+   meaningless even if factored.
 4. **The SHA-512 page.** A search problem over the deep web, not analysis.
    Likely dead unless the page still exists somewhere.
 

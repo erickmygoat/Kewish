@@ -7,6 +7,9 @@ it on known text came back empty on the unsolved pages.
 
 ---
 
+See [THEMES.md](THEMES.md) for how the solved pages were broken and how
+their habits translate into these tests.
+
 ## Where we are, in one paragraph
 
 The 56 unsolved pages are written in the same 29 runes as the solved ones, in
@@ -17,8 +20,9 @@ certainly *A* or *I*) is written with all 29 different runes. That is the
 signature of a key that never repeats and looks random. There is one crack:
 two identical runes in a row are five times rarer than chance (z = −17), which
 means the key was generated with a rule. Our best guess at that rule is "avoid
-emitting a repeat", applied about 80% of the time. Everything else follows
-from those facts.
+emitting a repeat", applied about 80% of the time. The rule turned out to
+be a skip, not a bump. It is tractable to decode, but it hides the right
+key from any test that ignores it. Everything else follows from those facts.
 
 ## The one rule that kills most ideas
 
@@ -48,15 +52,23 @@ cipher fashion; it follows from counting.
 | 4 | A rune stands for a whole word | separated groups would be phrases; word lengths would not look like English | `word_structure.py` | word-length distance from English **0.079** (solved English 0.041; random breaks 0.261) | **ruled out** |
 | 4b | — same, one-rune words | under any fixed meaning they pile onto 2–3 runes (A, I) | `word_structure.py` | solved: 28 tokens on **3** runes. Unsolved: 87 tokens on **all 29** | **ruled out**, and the clearest single picture of "there is a key" |
 | 5 | The key is an existing text used as-is: Nagarjuna, Crowley, Emerson, the Mabinogion, a bible… | ciphertext stays measurably lopsided | `running_key.py` | running key χ² **571 ± 39**; unsolved **26.4**; z = **−13.9** | **ruled out** as plain text (run on English) |
-| 6 | The key is a repeating keyword of any length ≤ 500 | coincidence spike at the key length | `periodicity.py` | real keywords: z +7 to +10. Unsolved max **+2.9** (noise ≈ 3.5) | **ruled out** |
+| 6 | The key is a repeating keyword of any length ≤ 500 | coincidence spike at the key length | `periodicity.py` | real keywords: z +7 to +10. Unsolved max **+2.9** (noise ≈ 3.5) | **ruled out**. The skip rule (#11) blurs long periods, but keywords fail independently: any key spelled from words has lopsided *values*, which would show in the flat rune counts whatever the skips (#5) |
 | 6b | — specifically Nagarjuna / Zen / Cicada / Emerson / Crowley words (SUNYATA, MADHYAMAKA, THE MIDDLE WAY, KOAN, INSTAR, CIRCUMFERENCE, SELFRELIANCE, THELEMA…) | high English score on decryption | `battery.py`, 16,380 cells | best THE MIDDLE WAY **+4.78**; random keys, same procedure: **+5.29, +4.82, +5.01** | **ruled out** — see the note below |
 | 7 | Ciphertext autokey | lag-1-only constraint, trivial inversion | `autokey.py` | best of 45 cells **+2.97** | **ruled out** |
 | 8 | The 256-byte strings are an S-box / key table | 256 distinct byte values | `byte_strings.py` | **158 / 157 / 172 / 161** (random expects 162) | **ruled out** |
 | 9 | "3301 minus each magic-square entry is prime" | 13/13 prime | `magic_square.py` | **1/13** | **false** |
-| 10 | A scrambled key from a meaningful seed: a hash chain, or a text that was itself encrypted | flat, aperiodic — exactly what we see | `battery.py` + `my_keystream()` | not yet tried | **open** — your move |
-| 11 | No-repeat rule: KEY_SKIP vs KEY_BUMP | different residual statistics | fixtures in `hypotheses.py` | not yet run | **open** |
+| 10 | A scrambled key from a meaningful seed: a hash chain, or a text that was itself encrypted | flat, aperiodic — exactly what we see | `battery.py` + `my_keystream()` (skip-aware) | not yet tried | **open** — your move. Every solved key was announced in plain English first, which fits a seed-from-a-sentence design |
+| 11 | No-repeat rule: KEY_SKIP vs KEY_BUMP | a bump piles missing repeats into one difference bin; a skip spreads them | `diff_spectrum.py` | missing repeats spread evenly; no bin above +3.1 sd | **resolved: skip.** Bump ruled out for every +k |
+| 11b | The skip makes the cipher intractable | — | `lp/decode.py` fixture | given the right key a skip is detectable (1 position in 29 branches); beam decode recovers **99.9%** | **wrong** — and the right key decoded *naively* scores z −1.4, so naive tests can miss it |
+| 14 | The An End key (totient of primes) continues into the unsolved pages | prime-gap-shaped difference histogram | `diff_spectrum.py`, any offset | log-likelihood ratio −35.6 | **ruled out** |
+| 15 | MOBIUS (a word in the 1033 square; also a section image) → Möbius μ(n) / Mertens as key | lopsided values / differences | `diff_spectrum.py` | μ −176.9, Mertens −240.5 | **ruled out** |
+| 16 | Primes, π(n), Fibonacci, squares, Gematria primes cycled, decimal π | lopsided values or differences | `diff_spectrum.py` | all far from flat | **ruled out** at every offset |
+| 17 | φ(n), φ(φ(n)), n·φ(n), σ(n), running sum of primes, p(p(n)), base-29 π / e / √2 / golden ratio | pass both fingerprints, so must be decrypted | `sacred_battery.py`, skip-aware, 112,480 cells | best +7.47; random keys +7.72; real break ≈ +20 | **ruled out** at section starts (0–199 + 3301, 1033, 761…) and as one continuous stream |
+| 18 | The unsolved headings reuse the solved ones (A KOAN, AN INSTRUCTION, SOME WISDOM, KNOW THIS) | matching word lengths | `theme_checks.py` | **0 of 14** match | **ruled out** |
+| 19 | Any rune (not just F) left unencrypted | that rune over-represented | `theme_checks.py` | max +2.2 sd (OE) | **ruled out** for any rune with real frequency |
+| 20 | Doctrinal sentences have prime gematria sums by design | prime share above chance | `theme_checks.py` | **45/102 vs 14.2, z +8.8**; koan stories at chance | **confirmed** — usable to validate a decryption |
 | 12 | A 2048-bit RSA modulus is hidden in the corpus | would make the 4 byte strings attackable | search | not yet run | **open** |
-| 13 | Interrupt sets (unencrypted F) on the unsolved pages | F share would be well above 3.45% | `report.py` | F = **3.54%**, about chance | **mostly ruled out** — at most a few dozen across 56 pages |
+| 13 | Interrupt sets (unencrypted F) on the unsolved pages | F share would be well above 3.45% | `report.py` | F = **3.54%**, about chance | **mostly ruled out** — at most a few dozen across 56 pages (see #19 for every other rune) |
 
 **About row 6b.** "THE MIDDLE WAY" topped the keyword list, and it's the name
 of Nagarjuna's own school. That's exactly the situation where you want to
