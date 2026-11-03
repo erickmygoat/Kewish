@@ -116,11 +116,21 @@ suppressed about four collisions in five.
 
 Checked against the data, not inherited:
 
-- **"The 256-byte page is a Liber Primus page."** The three 256-byte strings
-  in `rtkd/iddqd` are the **2012–2013 hidden-service byte strings**
-  (`byte-strings/byte-strings`), not pages of the Liber Primus. All three are
-  exactly 512 hex characters = 256 bytes = 2048 bits. They are a separate
-  artifact from the unsolved rune pages and should not be pooled with them.
+- **"The 256-byte page is a Liber Primus page."** Half right, and my own
+  earlier summary of this got it wrong twice; corrected here from the data.
+  There are **four** such strings in `rtkd/iddqd`
+  (`byte-strings/byte-strings`), not three, and they are from the **2014**
+  round, not 2012–13. Three are from the onion chain (hidden services 2–4:
+  `cu343l33nqaekrnw`, `fv7lyucmeozzd5j4`, `avowyfgl5lkzfj3n`); the fourth
+  **is** Liber Primus material — the matrix on pages 49–51 converted to hex.
+  All four are exactly 512 hex chars = 256 bytes = 2048 bits.
+
+- **"The 256 bytes might be an S-box or keystream table."** Ruled out, and
+  this was the decisive cheap test. A permutation of 0..255 would show 256
+  distinct byte values; 256 uniform random draws are expected to show
+  `256*(1-(255/256)^256)` = 162.0. Measured: **158, 157, 172, 161**. All four
+  sit on the random expectation, so none is a permutation. They behave like
+  ciphertext or digests, not key material. (`scripts/byte_strings.py`)
 - **"RSA-2048 block."** Possible but weakly motivated: a bare 2048-bit
   ciphertext block with no published modulus is unsolvable by construction,
   and every solved Cicada stage has been solvable from material in hand. If
@@ -130,21 +140,38 @@ Checked against the data, not inherited:
   weak: four of the nine are plaintext. The meaningful validation is the five
   enciphered pages, three of them polyalphabetic.
 
-## 6. The open question
+## 6. How the no-repeat rule works — resolved
 
-The deficit is real, large, local to lag 1, and reproduced by a rejection rule
-applied ~80% of the time. Two mechanisms fit, and they differ in how
-attackable they are:
+This was the open question; the lag-1 *difference* histogram answers it
+without guessing a key (`scripts/diff_spectrum.py`):
 
-- **KEY_SKIP** — on collision, discard the key value and take the next.
-  The keystream then contains skips at positions invisible to an attacker, so
-  every candidate key must be searched jointly with its skip pattern. Roughly
-  as expensive as the known interrupt search, i.e. mostly intractable.
-- **KEY_BUMP** — on collision, perturb the key deterministically. The
-  keystream stays in lockstep with position, so a candidate key is testable
-  exactly and cheaply. **This is the case worth hoping for**, and
-  `lp/hypotheses.undo_key_bump` already implements the decoder.
+| d = C[i+1]−C[i] | 0 | 1 | 2 | … | 9 (max) | … | 28 |
+|---|---|---|---|---|---|---|---|
+| count | **86** | 459 | 504 | … | 510 | … | 431 |
+| z | **−17.4** | +0.6 | +2.8 | … | +3.1 | … | −0.7 |
 
-Separating these is the highest-value next step, and it is testable without
-guessing a key: the two models leave different residual statistics on
-simulated text. `lp/hypotheses.apply_rejection` generates fixtures for both.
+- **KEY_BUMP is ruled out** for every fixed bump +k. A bump would move the
+  ~360 missing doubles into the single bin d = k (about +17 sd). No bin
+  exceeds +3.1 sd.
+- **KEY_SKIP (skip ahead / redraw) fits.** The missing doubles reappear spread
+  evenly over the other 28 bins, which is exactly what a redraw predicts.
+- **The rule ignores layout.** The deficit is the same inside words (0.18×),
+  across word gaps (0.24×), at mid-word line breaks (0.21×) and at sentence
+  ends (0.24×). The ~1 in 5 collisions that leak through are spread evenly:
+  dispersion index across 169 sentences is 0.98 (null 95th percentile 1.24).
+  There is no rule-free passage.
+
+**Correction to this file's earlier claim.** It said KEY_SKIP would be
+"mostly intractable" because the skips are invisible. That was wrong. Given
+the right keystream, a skip at position *i* is possible only if
+C[i] − K[j+1] + K[j] ≡ C[i−1], which holds by chance about 1 time in 29. So
+decoding branches rarely, and a beam search with an English score resolves the
+branches (`lp/decode.undo_key_skip`). On a test page it recovers **99.9%** of
+the text.
+
+**The consequence that matters most.** On the same test page, the *right* key
+decoded the ordinary way scores **z = −1.4**: noise. The first skip, about
+every 36 runes, throws the alignment off for the rest. Any keystream test that
+does not model the skip rule — including this repo's earlier batteries —
+could have tried the correct key and discarded it. Every candidate should be
+re-run skip-aware.

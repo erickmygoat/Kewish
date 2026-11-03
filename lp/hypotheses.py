@@ -10,26 +10,34 @@ toward 1/29 from either side. Nothing uniform and independent produces
 0.19x. So the unsolved stream was built with a rule that forbids, or nearly
 forbids, emitting the same rune twice in a row.
 
-Three mechanisms produce a lag-1-only deficit, and they imply DIFFERENT
-attacks. That is why the choice matters rather than being a detail:
+Three mechanisms were on the table; the data has now chosen between them
+(scripts/diff_spectrum.py):
 
   (a) KEY_SKIP      -- on collision, discard that key value and take the
-                       next one. The keystream then contains skips at
-                       positions an attacker cannot see, so every candidate
-                       key must be searched together with its skip pattern
-                       (combinatorial, like the known interrupt search).
+                       next one (equivalently, redraw).  CONSISTENT.
+                       The ~360 missing doubles reappear spread evenly over
+                       the other 28 difference values, exactly as a redraw
+                       predicts. Contrary to what this file first claimed,
+                       it is NOT combinatorial: given the right keystream a
+                       skip is possible only where C[i]-K[j+1]+K[j] == C[i-1]
+                       (about 1 position in 29), so decoding branches rarely
+                       and a beam search resolves it. See lp/decode.py.
 
-  (b) KEY_BUMP      -- on collision, perturb the key value deterministically
-                       (e.g. +1 mod 29). The keystream stays in lockstep
-                       with position, so a candidate key is testable exactly
-                       and cheaply. Far more attackable than (a).
+  (b) KEY_BUMP      -- on collision, add a fixed +k.  RULED OUT for every k:
+                       it would pile the missing doubles into the single bin
+                       d=k (~+17 sd). No bin exceeds +3.1 sd.
 
-  (c) PLAINTEXT_AVOID -- the author composed plaintext that happens not to
-                       collide. Then the deficit says nothing about the key
-                       and keystream search should ignore it entirely.
+  (c) PLAINTEXT_AVOID -- the author composed plaintext that never collides.
+                       RULED OUT: a uniform independent key would erase any
+                       plaintext property from C, and the deficit is the same
+                       inside words (0.18x), across word gaps (0.24x), at line
+                       breaks (0.21x) and at sentence ends (0.24x).
 
-Distinguishing (a) from (b) is the highest-value open question in this
-repo: (b) makes brute-force over key sequences viable, (a) mostly does not.
+The rule leaks about 1 collision in 5, evenly everywhere (dispersion index
+0.98): no passage is rule-free. Why 80% rather than 100% is unexplained.
+
+The practical consequence: any keystream must be tested with skip-aware
+decoding. Decoded the ordinary way, the RIGHT key scores like noise.
 """
 from .alphabet import N
 
@@ -58,7 +66,17 @@ def apply_rejection(plain, keystream, model='KEY_BUMP'):
 
 
 def undo_key_bump(cipher, keystream):
-    """Decoder for model (b). Deterministic, so no search is needed."""
+    """Decoder for model (b) -- which the data has since RULED OUT. Kept so the
+    fixtures and tests that compare the two models still run.
+
+    One honest ambiguity:
+
+    When c[i] == c[i-1] + 1 the rune was EITHER bumped off a collision OR
+    naturally landed one above its neighbour; the ciphertext cannot say
+    which. This decoder always assumes a bump, so it mis-decodes the natural
+    cases -- about 1 rune in 29. That costs a correct key a little score but
+    does not hide it, which is all a screening decoder needs.
+    """
     out = []
     ks = list(keystream)
     for i, c in enumerate(cipher):
@@ -78,23 +96,36 @@ def undo_key_bump(cipher, keystream):
 def my_keystream(n):
     """Return the first `n` key values (each 0..28) of a keystream to test.
 
-    This is picked up automatically by scripts/battery.py, which runs it
-    against all 9 unsolved pages at every key offset and reports a
-    null-calibrated z. Known plaintext scores z = +87; noise is |z| < 3.
+    Run it with:  python3 -I scripts/battery.py
+    It is tried on all 9 unsolved pages at start offsets 0..299, decoded both
+    plainly and SKIP-AWARE (lp.decode.undo_key_skip), and compared against random
+    streams pushed through the identical procedure. A real break scores far
+    above that random maximum (the calibration hit is about +47).
 
-    CONSTRAINT WORTH KNOWING BEFORE YOU CHOOSE (measured, not assumed):
-    the unsolved pages are flat at every lag but 1. Any keystream whose
-    successive values are *correlated* -- slowly growing integer sequences,
-    most notably -- leaves a lag-2+ signature that these pages do not have.
-    That is evidence against plain prime/Fibonacci-style streams taken mod
-    29, and in favour of streams whose consecutive values are effectively
-    independent: digit expansions of irrationals in base 29, hash chains,
-    or a long text used as a running key.
+    WHAT IS ALREADY RULED OUT, so you don't spend a guess on it:
+      * any fixed meaning per rune, in any language     (flat histogram)
+      * a rune standing for a whole word                (scripts/word_structure.py)
+      * an ordinary text used as-is as the key          (scripts/running_key.py)
+      * any repeating keyword up to length 500          (scripts/periodicity.py)
+      * primes / Fibonacci-style integer sequences      (flat at lags 2..500)
 
-    The catch, honestly: those all need the exact seed or source text, so
-    the search only pays off if the seed is guessable from the book itself
-    (3301, the magic-square constants, the 512-bit hash on "An End").
+    WHAT SURVIVES: a key that looks random but is fully determined by a
+    short, meaningful seed. `lp.keystream.hash_stream(seed)` builds exactly
+    that -- a hash chain turning any phrase into a flat, aperiodic stream.
+    This is where philosophy can legitimately matter: the math says the key
+    must be scrambled, but nothing says the SEED isn't a verse, a koan, or a
+    line of Nagarjuna. Choosing the seed is the part only a person can do.
+
+    Decisions that are yours:
+      - which seed text (exact wording, spelling, case, spacing all change
+        the hash -- e.g. a translation of the MMK dedicatory verse, a line
+        from the solved pages, "3301", the An End hash itself)
+      - sha256 vs sha512 (Cicada quoted a SHA-512 on "An End")
+      - one stream for the whole book, or reseeded per section
     """
-    # TODO(you): 5-10 lines. e.g. digits of pi in base 29, a hash chain
-    # seeded from 3301, or a running key from a text Cicada pointed to.
+    # TODO(you): 3-10 lines. Sketch:
+    #   from itertools import islice
+    #   from .keystream import hash_stream
+    #   seed = "..."            # <- the meaningful choice
+    #   return list(islice(hash_stream(seed, 'sha512'), n))
     raise NotImplementedError('fill in my_keystream()')

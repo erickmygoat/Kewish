@@ -55,3 +55,22 @@ def keyword(indices):
     while True:
         for v in indices:
             yield v
+
+
+def hash_stream(seed, algo='sha256'):
+    """Infinite stream of values 0..28 from a hash chain seeded by `seed`.
+
+    state_0 = H(seed); state_{k+1} = H(state_k). Each digest byte b < 232
+    (= 8*29) yields b % 29; bytes >= 232 are discarded so the output is
+    exactly uniform. This is the kind of key that would look like the
+    unsolved pages -- flat, aperiodic -- while still being fully determined
+    by a short, meaningful seed.
+    """
+    import hashlib
+    state = hashlib.new(algo, seed.encode('utf-8') if isinstance(seed, str)
+                        else seed).digest()
+    while True:
+        for b in state:
+            if b < 232:
+                yield b % 29
+        state = hashlib.new(algo, state).digest()

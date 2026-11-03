@@ -48,6 +48,27 @@ python3 -I scripts/doubles.py               # the one real anomaly, by lag
 python3 -I scripts/doubles_control.py       # is it the cipher, or the book?
 python3 -I scripts/simulate.py              # what rule reproduces it
 python3 -I scripts/autokey.py               # autokey family (refuted)
+python3 -I scripts/gematria_check.py        # Gematria Primus, validated 102/102
+python3 -I scripts/magic_square.py          # 5x5 square: constant 3301
+python3 -I scripts/byte_strings.py          # the four 2048-bit strings
+python3 -I scripts/word_structure.py        # is a rune a letter or a word?
+python3 -I scripts/running_key.py           # could the key be an existing book?
+python3 -I scripts/periodicity.py           # any repeating keyword <= 500?
+python3 -I scripts/battery.py               # candidate keys + random-key null
+python3 -I scripts/diff_spectrum.py        # key families ruled out at ANY offset; skip vs bump
+python3 -I scripts/theme_checks.py          # headings, prime sentences, unencrypted runes
+python3 -I scripts/sacred_battery.py        # theme-derived keystreams, skip-aware (~2-3 min)
+```
+
+**Every idea tried so far, and its status, is in [HYPOTHESES.md](HYPOTHESES.md).**
+**How the solved pages were broken, and the book's recurring themes, are in
+[THEMES.md](THEMES.md).**
+
+For the full 2012-2017 primary archive (~1.3 GB, only needed for
+[RESEARCH.md](RESEARCH.md)'s sources, not for any analysis):
+
+```bash
+WITH_ARCHIVE=1 ./scripts/fetch_sources.sh
 ```
 
 No dependencies beyond the Python 3 standard library. Scripts take
@@ -63,6 +84,9 @@ No dependencies beyond the Python 3 standard library. Scripts take
 | `lp/keystream.py` | primes, totients, Fibonacci, Lucas, keyword streams |
 | `lp/stats.py` | IoC, χ², rune frequencies, adjacent-repeat rate |
 | `lp/score.py` | null-calibrated English scorer over rune n-grams |
+| `lp/gematria.py` | Gematria Primus sums, primality, emirps, totients |
+| `lp/translit.py` | English → runes, for turning keywords into keys |
+| `lp/decode.py` | skip-aware decoder for the unsolved pages' no-repeat rule |
 | `lp/hypotheses.py` | models for the repeat deficit — **and where to add yours** |
 | `scripts/` | runnable analyses, each self-documenting |
 | `tests/` | regression tests; the key one re-derives all 9 solved pages |
@@ -72,6 +96,14 @@ No dependencies beyond the Python 3 standard library. Scripts take
 See [FINDINGS.md](FINDINGS.md). The short version: the unsolved pages are
 statistically flat in every respect but one, and that one exception is sharp,
 large, and not explained by any cipher family tested here.
+
+## Background
+
+See [RESEARCH.md](RESEARCH.md) — a dossier on Cicada 3301 itself: the 2012–2017
+timeline, the puzzle chains, the Gematria Primus, the magic square, the byte
+strings, the SHA-512 bounty, and the attribution question. Every claim there is
+marked **[V]** verified by a script here, **[P]** quoted from a signed Cicada
+message or archived original, or **[R]** reported by secondary sources.
 
 ## Data sources
 
