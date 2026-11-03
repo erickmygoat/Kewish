@@ -116,11 +116,21 @@ suppressed about four collisions in five.
 
 Checked against the data, not inherited:
 
-- **"The 256-byte page is a Liber Primus page."** The three 256-byte strings
-  in `rtkd/iddqd` are the **2012–2013 hidden-service byte strings**
-  (`byte-strings/byte-strings`), not pages of the Liber Primus. All three are
-  exactly 512 hex characters = 256 bytes = 2048 bits. They are a separate
-  artifact from the unsolved rune pages and should not be pooled with them.
+- **"The 256-byte page is a Liber Primus page."** Half right, and my own
+  earlier summary of this got it wrong twice; corrected here from the data.
+  There are **four** such strings in `rtkd/iddqd`
+  (`byte-strings/byte-strings`), not three, and they are from the **2014**
+  round, not 2012–13. Three are from the onion chain (hidden services 2–4:
+  `cu343l33nqaekrnw`, `fv7lyucmeozzd5j4`, `avowyfgl5lkzfj3n`); the fourth
+  **is** Liber Primus material — the matrix on pages 49–51 converted to hex.
+  All four are exactly 512 hex chars = 256 bytes = 2048 bits.
+
+- **"The 256 bytes might be an S-box or keystream table."** Ruled out, and
+  this was the decisive cheap test. A permutation of 0..255 would show 256
+  distinct byte values; 256 uniform random draws are expected to show
+  `256*(1-(255/256)^256)` = 162.0. Measured: **158, 157, 172, 161**. All four
+  sit on the random expectation, so none is a permutation. They behave like
+  ciphertext or digests, not key material. (`scripts/byte_strings.py`)
 - **"RSA-2048 block."** Possible but weakly motivated: a bare 2048-bit
   ciphertext block with no published modulus is unsolvable by construction,
   and every solved Cicada stage has been solvable from material in hand. If

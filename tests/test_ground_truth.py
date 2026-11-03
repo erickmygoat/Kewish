@@ -85,6 +85,45 @@ def test_all_solved_pages_reproduce():
         assert got == expect.indices, f'{name} did not reproduce'
 
 
+def test_gematria_primus_is_first_29_primes():
+    from lp import gematria as g
+    assert PRIMES[:5] == [2, 3, 5, 7, 11]
+    assert sum(PRIMES) == 1480
+    assert g.value('\u16a0') == 2            # F
+    assert g.value('\u16e0') == 109          # EA
+    assert g.value('\u16a0\u16e0') == 111
+
+
+def test_3301_is_prime_and_emirp():
+    from lp import gematria as g
+    assert g.is_prime(3301)
+    assert g.is_emirp(3301)
+    assert g.reverse(3301) == 1033
+    assert g.is_prime(1033)
+
+
+def test_totient_of_prime_is_p_minus_one():
+    from lp import gematria as g
+    for p in (2, 3, 5, 7, 11, 3301):
+        assert g.totient(p) == p - 1
+
+
+def test_magic_square_constant_is_3301():
+    from magic_square import SQUARE_5
+    n = len(SQUARE_5)
+    sums = [sum(r) for r in SQUARE_5]
+    sums += [sum(SQUARE_5[i][j] for i in range(n)) for j in range(n)]
+    sums.append(sum(SQUARE_5[i][i] for i in range(n)))
+    sums.append(sum(SQUARE_5[i][n - 1 - i] for i in range(n)))
+    assert set(sums) == {3301}, f'not magic: {sorted(set(sums))}'
+
+
+def test_an_end_hash_is_sha512_width():
+    from magic_square import AN_END_HASH
+    assert len(AN_END_HASH) == 128
+    int(AN_END_HASH, 16)  # must be valid hex
+
+
 if __name__ == '__main__':
     fns = [v for k, v in sorted(globals().items()) if k.startswith('test_')]
     failed = 0
