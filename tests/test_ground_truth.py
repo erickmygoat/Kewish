@@ -124,6 +124,35 @@ def test_an_end_hash_is_sha512_width():
     int(AN_END_HASH, 16)  # must be valid hex
 
 
+def test_translit_reproduces_published_keys():
+    """Spelling the keywords one rune per letter gives Cicada's exact keys,
+    which pins down how Cicada turned words into shift sequences."""
+    from lp.translit import to_indices
+    assert to_indices('DIVINITY', False) == [23, 10, 1, 10, 9, 10, 16, 26]
+    assert to_indices('FIRFUMFERENFE', False) == [0, 10, 4, 0, 1, 19, 0, 18,
+                                                   4, 18, 9, 0, 18]
+
+
+def test_translit_digraphs():
+    from lp.translit import to_runes
+    assert to_runes('THING') == '\u16a6\u16dd'       # TH + ING
+    assert to_runes('QUESTION').startswith('\u16b3\u16b9')   # QU -> CW
+
+
+def test_hash_stream_is_deterministic_in_range_and_flat():
+    from itertools import islice
+    from lp.keystream import hash_stream
+    a = list(islice(hash_stream('3301'), 29 * 400))
+    b = list(islice(hash_stream('3301'), 29 * 400))
+    assert a == b
+    assert min(a) >= 0 and max(a) <= 28
+    from collections import Counter
+    c = Counter(a)
+    assert len(c) == 29
+    assert max(c.values()) < 2 * min(c.values())    # no gross bias
+    assert list(islice(hash_stream('3302'), 50)) != a[:50]
+
+
 if __name__ == '__main__':
     fns = [v for k, v in sorted(globals().items()) if k.startswith('test_')]
     failed = 0

@@ -58,7 +58,14 @@ def apply_rejection(plain, keystream, model='KEY_BUMP'):
 
 
 def undo_key_bump(cipher, keystream):
-    """Decoder for model (b). Deterministic, so no search is needed."""
+    """Decoder for model (b), with one honest ambiguity.
+
+    When c[i] == c[i-1] + 1 the rune was EITHER bumped off a collision OR
+    naturally landed one above its neighbour; the ciphertext cannot say
+    which. This decoder always assumes a bump, so it mis-decodes the natural
+    cases -- about 1 rune in 29. That costs a correct key a little score but
+    does not hide it, which is all a screening decoder needs.
+    """
     out = []
     ks = list(keystream)
     for i, c in enumerate(cipher):
@@ -78,23 +85,36 @@ def undo_key_bump(cipher, keystream):
 def my_keystream(n):
     """Return the first `n` key values (each 0..28) of a keystream to test.
 
-    This is picked up automatically by scripts/battery.py, which runs it
-    against all 9 unsolved pages at every key offset and reports a
-    null-calibrated z. Known plaintext scores z = +87; noise is |z| < 3.
+    Run it with:  python3 -I scripts/battery.py
+    It is tried on all 9 unsolved pages at start offsets 0..299, decoded both
+    plainly and with the KEY_BUMP rule undone, and compared against random
+    streams pushed through the identical procedure. A real break scores far
+    above that random maximum (the calibration hit is about +47).
 
-    CONSTRAINT WORTH KNOWING BEFORE YOU CHOOSE (measured, not assumed):
-    the unsolved pages are flat at every lag but 1. Any keystream whose
-    successive values are *correlated* -- slowly growing integer sequences,
-    most notably -- leaves a lag-2+ signature that these pages do not have.
-    That is evidence against plain prime/Fibonacci-style streams taken mod
-    29, and in favour of streams whose consecutive values are effectively
-    independent: digit expansions of irrationals in base 29, hash chains,
-    or a long text used as a running key.
+    WHAT IS ALREADY RULED OUT, so you don't spend a guess on it:
+      * any fixed meaning per rune, in any language     (flat histogram)
+      * a rune standing for a whole word                (scripts/word_structure.py)
+      * an ordinary text used as-is as the key          (scripts/running_key.py)
+      * any repeating keyword up to length 500          (scripts/periodicity.py)
+      * primes / Fibonacci-style integer sequences      (flat at lags 2..500)
 
-    The catch, honestly: those all need the exact seed or source text, so
-    the search only pays off if the seed is guessable from the book itself
-    (3301, the magic-square constants, the 512-bit hash on "An End").
+    WHAT SURVIVES: a key that looks random but is fully determined by a
+    short, meaningful seed. `lp.keystream.hash_stream(seed)` builds exactly
+    that -- a hash chain turning any phrase into a flat, aperiodic stream.
+    This is where philosophy can legitimately matter: the math says the key
+    must be scrambled, but nothing says the SEED isn't a verse, a koan, or a
+    line of Nagarjuna. Choosing the seed is the part only a person can do.
+
+    Decisions that are yours:
+      - which seed text (exact wording, spelling, case, spacing all change
+        the hash -- e.g. a translation of the MMK dedicatory verse, a line
+        from the solved pages, "3301", the An End hash itself)
+      - sha256 vs sha512 (Cicada quoted a SHA-512 on "An End")
+      - one stream for the whole book, or reseeded per section
     """
-    # TODO(you): 5-10 lines. e.g. digits of pi in base 29, a hash chain
-    # seeded from 3301, or a running key from a text Cicada pointed to.
+    # TODO(you): 3-10 lines. Sketch:
+    #   from itertools import islice
+    #   from .keystream import hash_stream
+    #   seed = "..."            # <- the meaningful choice
+    #   return list(islice(hash_stream(seed, 'sha512'), n))
     raise NotImplementedError('fill in my_keystream()')

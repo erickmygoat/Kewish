@@ -51,7 +51,13 @@ python3 -I scripts/autokey.py               # autokey family (refuted)
 python3 -I scripts/gematria_check.py        # Gematria Primus, validated 102/102
 python3 -I scripts/magic_square.py          # 5x5 square: constant 3301
 python3 -I scripts/byte_strings.py          # the four 2048-bit strings
+python3 -I scripts/word_structure.py        # is a rune a letter or a word?
+python3 -I scripts/running_key.py           # could the key be an existing book?
+python3 -I scripts/periodicity.py           # any repeating keyword <= 500?
+python3 -I scripts/battery.py               # candidate keys + random-key null
 ```
+
+**Every idea tried so far, and its status, is in [HYPOTHESES.md](HYPOTHESES.md).**
 
 For the full 2012-2017 primary archive (~1.3 GB, only needed for
 [RESEARCH.md](RESEARCH.md)'s sources, not for any analysis):
@@ -74,6 +80,7 @@ No dependencies beyond the Python 3 standard library. Scripts take
 | `lp/stats.py` | IoC, χ², rune frequencies, adjacent-repeat rate |
 | `lp/score.py` | null-calibrated English scorer over rune n-grams |
 | `lp/gematria.py` | Gematria Primus sums, primality, emirps, totients |
+| `lp/translit.py` | English → runes, for turning keywords into keys |
 | `lp/hypotheses.py` | models for the repeat deficit — **and where to add yours** |
 | `scripts/` | runnable analyses, each self-documenting |
 | `tests/` | regression tests; the key one re-derives all 9 solved pages |
